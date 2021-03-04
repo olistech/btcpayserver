@@ -12,8 +12,8 @@ using System.Collections.Specialized;
 using BTCPayServer.Events;
 using BTCPayServer.HostedServices;
 using BTCPayServer.Payments;
-using BTCPayServer.Services.Altcoins.Ethereum.Configuration;
-using BTCPayServer.Services.Altcoins.Ethereum.Payments;
+using BTCPayServer.Services.Altcoins.Matic.Configuration;
+using BTCPayServer.Services.Altcoins.Matic.Payments;
 using BTCPayServer.Services.Invoices;
 using Microsoft.Extensions.Logging;
 using NBitcoin.Logging;
@@ -21,9 +21,9 @@ using Nethereum.RPC.Eth.DTOs;
 using Nethereum.StandardTokenEIP20.ContractDefinition;
 using Nethereum.Web3;
 
-namespace BTCPayServer.Services.Altcoins.Ethereum.Services
+namespace BTCPayServer.Services.Altcoins.Matic.Services
 {
-    public class EthereumWatcher : EventHostedServiceBase
+    public class MaticWatcher : EventHostedServiceBase
     {
         private readonly EventAggregator _eventAggregator;
         private readonly InvoiceRepository _invoiceRepository;
@@ -31,12 +31,12 @@ namespace BTCPayServer.Services.Altcoins.Ethereum.Services
         private readonly HashSet<PaymentMethodId> PaymentMethods;
 
         private readonly Web3 Web3;
-        private readonly List<EthereumBTCPayNetwork> Networks;
+        private readonly List<MaticBTCPayNetwork> Networks;
         public string GlobalError { get; private set; } = "The chain watcher is still starting.";
 
         public override async Task StartAsync(CancellationToken cancellationToken)
         {
-            Logs.NodeServer.LogInformation($"Starting EthereumWatcher for chain {ChainId}");
+            Logs.NodeServer.LogInformation($"Starting MaticWatcher for chain {ChainId}");
             var result = await Web3.Eth.ChainId.SendRequestAsync();
             if (result.Value != ChainId)
             {
@@ -52,8 +52,8 @@ namespace BTCPayServer.Services.Altcoins.Ethereum.Services
 
         protected override void SubscribeToEvents()
         {
-            Subscribe<EthereumService.ReserveEthereumAddressResponse>();
-            Subscribe<EthereumAddressBalanceFetched>();
+            Subscribe<MaticService.ReserveMaticAddressResponse>();
+            Subscribe<MaticAddressBalanceFetched>();
             Subscribe<CatchUp>();
             base.SubscribeToEvents();
         }
@@ -76,7 +76,7 @@ namespace BTCPayServer.Services.Altcoins.Ethereum.Services
                 }
             }
 
-            if (evt is EthereumAddressBalanceFetched response)
+            if (evt is MaticAddressBalanceFetched response)
             {
                 if (response.ChainId != ChainId)
                 {
@@ -102,7 +102,7 @@ namespace BTCPayServer.Services.Altcoins.Ethereum.Services
                 if (existingPayment is null && response.Amount > 0)
                 {
                     //new payment
-                    var paymentData = new EthereumLikePaymentData()
+                    var paymentData = new MaticLikePaymentData()
                     {
                         Address = response.Address,
                         CryptoCode = response.CryptoCode,
@@ -122,7 +122,7 @@ namespace BTCPayServer.Services.Altcoins.Ethereum.Services
                 }
                 else if (existingPayment != null)
                 {
-                    var cd = (EthereumLikePaymentData)existingPayment.GetCryptoPaymentData();
+                    var cd = (MaticLikePaymentData)existingPayment.GetCryptoPaymentData();
                     //existing payment amount was changed. Set to unaccounted and register as a new payment.
                     if (response.Amount == 0 || response.Amount != cd.Amount)
                     {
@@ -131,7 +131,7 @@ namespace BTCPayServer.Services.Altcoins.Ethereum.Services
                         await _invoiceRepository.UpdatePayments(new List<PaymentEntity>() {existingPayment});
                         if (response.Amount > 0)
                         {
-                            var paymentData = new EthereumLikePaymentData()
+                            var paymentData = new MaticLikePaymentData()
                             {
                                 Address = response.Address,
                                 CryptoCode = response.CryptoCode,
@@ -205,7 +205,7 @@ namespace BTCPayServer.Services.Altcoins.Ethereum.Services
 
         public override Task StopAsync(CancellationToken cancellationToken)
         {
-            Logs.NodeServer.LogInformation($"Stopping EthereumWatcher for chain {ChainId}");
+            Logs.NodeServer.LogInformation($"Stopping MaticWatcher for chain {ChainId}");
             return base.StopAsync(cancellationToken);
         }
 
@@ -239,14 +239,14 @@ namespace BTCPayServer.Services.Altcoins.Ethereum.Services
 
             foreach (var network in Networks)
             {
-                var erc20Network = network as ERC20BTCPayNetwork;
-                var paymentMethodId = new PaymentMethodId(network.CryptoCode, EthereumPaymentType.Instance);
+                var erc20Network = network as ERC20MaticBTCPayNetwork;
+                var paymentMethodId = new PaymentMethodId(network.CryptoCode, MaticPaymentType.Instance);
                 var expandedInvoices = invoices
                     .Select(entity => (
                         Invoice: entity,
                         PaymentMethodDetails: entity.GetPaymentMethods().TryGet(paymentMethodId),
                         ExistingPayments: entity.GetPayments(network).Select(paymentEntity => (Payment: paymentEntity,
-                            PaymentData: (EthereumLikePaymentData)paymentEntity.GetCryptoPaymentData(),
+                            PaymentData: (MaticLikePaymentData)paymentEntity.GetCryptoPaymentData(),
                             Invoice: entity))
                     )).Where(tuple => tuple.PaymentMethodDetails != null).ToList();
 
@@ -266,7 +266,7 @@ namespace BTCPayServer.Services.Altcoins.Ethereum.Services
                     tasks.Add(Task.WhenAll(existingPaymentData.Select(async tuple =>
                     {
                         var bal = await GetBalance(network, blockParameter, tuple.PaymentData.Address);
-                        _eventAggregator.Publish(new EthereumAddressBalanceFetched()
+                        _eventAggregator.Publish(new MaticAddressBalanceFetched()
                         {
                             Address = tuple.PaymentData.Address,
                             CryptoCode = network.CryptoCode,
@@ -291,7 +291,7 @@ namespace BTCPayServer.Services.Altcoins.Ethereum.Services
                     {
                         var bal = await GetBalance(network, blockParameter,
                             tuple.PaymentMethodDetails.GetPaymentMethodDetails().GetPaymentDestination());
-                        _eventAggregator.Publish(new EthereumAddressBalanceFetched()
+                        _eventAggregator.Publish(new MaticAddressBalanceFetched()
                         {
                             Address = tuple.PaymentMethodDetails.GetPaymentMethodDetails().GetPaymentDestination(),
                             CryptoCode = network.CryptoCode,
@@ -300,7 +300,7 @@ namespace BTCPayServer.Services.Altcoins.Ethereum.Services
                             BlockParameter = blockParameter,
                             ChainId = ChainId,
                             InvoiceEntity = tuple.Invoice,
-                            PaymentMethodDetails = (EthereumLikeOnChainPaymentMethodDetails) tuple.PaymentMethodDetails.GetPaymentMethodDetails()
+                            PaymentMethodDetails = (MaticLikeOnChainPaymentMethodDetails) tuple.PaymentMethodDetails.GetPaymentMethodDetails()
                         });
                     }));
                 }
@@ -309,7 +309,7 @@ namespace BTCPayServer.Services.Altcoins.Ethereum.Services
             }
         }
 
-        public class EthereumAddressBalanceFetched
+        public class MaticAddressBalanceFetched
         {
             public BlockParameter BlockParameter { get; set; }
             public int ChainId { get; set; }
@@ -318,7 +318,7 @@ namespace BTCPayServer.Services.Altcoins.Ethereum.Services
             public long Amount { get; set; }
             public InvoiceEntity InvoiceEntity { get; set; }
             public PaymentEntity MatchedExistingPayment { get; set; }
-            public EthereumLikeOnChainPaymentMethodDetails PaymentMethodDetails { get; set; }
+            public MaticLikeOnChainPaymentMethodDetails PaymentMethodDetails { get; set; }
 
             public override string ToString()
             {
@@ -332,10 +332,9 @@ namespace BTCPayServer.Services.Altcoins.Ethereum.Services
                 new InvoiceEvent(invoice, InvoiceEvent.ReceivedPayment) {Payment = payment});
         }
 
-        private async Task<long> GetBalance(EthereumBTCPayNetwork network, BlockParameter blockParameter,
-            string address)
+        private async Task<long> GetBalance(MaticBTCPayNetwork network, BlockParameter blockParameter, string address)
         {
-            if (network is ERC20BTCPayNetwork erc20BTCPayNetwork)
+            if (network is ERC20MaticBTCPayNetwork erc20BTCPayNetwork)
             {
                 return (long)(await Web3.Eth.GetContractHandler(erc20BTCPayNetwork.SmartContractAddress)
                     .QueryAsync<BalanceOfFunction, BigInteger>(new BalanceOfFunction() {Owner = address}));
@@ -346,7 +345,7 @@ namespace BTCPayServer.Services.Altcoins.Ethereum.Services
             }
         }
 
-        public EthereumWatcher(int chainId, EthereumLikeConfiguration config,
+        public MaticWatcher(int chainId, MaticLikeConfiguration config,
             BTCPayNetworkProvider btcPayNetworkProvider,
             EventAggregator eventAggregator, InvoiceRepository invoiceRepository) :
             base(eventAggregator)
@@ -373,11 +372,11 @@ namespace BTCPayServer.Services.Altcoins.Ethereum.Services
             var iLog = LogManager.GetLogger<ILog>();
             Web3 = new Web3(config.Web3ProviderUrl, iLog, headerValue);
             Networks = btcPayNetworkProvider.GetAll()
-                .OfType<EthereumBTCPayNetwork>()
+                .OfType<MaticBTCPayNetwork>()
                 .Where(network => network.ChainId == chainId)
                 .ToList();
             PaymentMethods = Networks
-                .Select(network => new PaymentMethodId(network.CryptoCode, EthereumPaymentType.Instance))
+                .Select(network => new PaymentMethodId(network.CryptoCode, MaticPaymentType.Instance))
                 .ToHashSet();
         }
     }

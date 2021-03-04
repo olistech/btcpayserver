@@ -1,0 +1,9 @@
+[
+    {
+        "cryptoCode" : "DERC20",
+        "displayName": "Dummy ERC20",
+        "cryptoImagePath" :"/imlegacy/liquid-tether.svg" ,
+        "smartContractAddress": "0xfe4F5145f6e09952a5ba9e956ED0C25e3Fa4c7F1",
+        "divisibility": 18
+    }
+]

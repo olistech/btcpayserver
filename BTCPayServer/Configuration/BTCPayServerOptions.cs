@@ -64,8 +64,6 @@ namespace BTCPayServer.Configuration
             if (conf.GetOrDefault<bool>("launchsettings", false) && NetworkType != NetworkType.Regtest)
                 throw new ConfigException($"You need to run BTCPayServer with the run.sh or run.ps1 script");
 
-          
-            
             BundleJsCss = conf.GetOrDefault<bool>("bundlejscss", true);
             DockerDeployment = conf.GetOrDefault<bool>("dockerdeployment", true);
             AllowAdminRegistration = conf.GetOrDefault<bool>("allow-admin-registration", false);

@@ -210,7 +210,6 @@ namespace BTCPayServer.Services.Invoices
                 await context.SaveChangesAsync().ConfigureAwait(false);
             }
 
-
             return invoice;
         }
 
@@ -479,6 +478,7 @@ namespace BTCPayServer.Services.Invoices
             }            
         }
         public async Task<InvoiceEntity[]> GetInvoices(string[] invoiceIds)
+
         {
             var invoiceIdSet = invoiceIds.ToHashSet();
             using (var context = _ContextFactory.CreateContext())
