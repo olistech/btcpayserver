@@ -17,7 +17,8 @@ COPY BTCPayServer.Client/. BTCPayServer.Client/.
 COPY BTCPayServer.Abstractions/. BTCPayServer.Abstractions/.
 COPY BTCPayServer/. BTCPayServer/.
 COPY Build/Version.csproj Build/Version.csproj
-ARG CONFIGURATION_NAME=Release
+#ARG CONFIGURATION_NAME=Release
+ARG CONFIGURATION_NAME=Altcoins-Release
 RUN cd BTCPayServer && dotnet publish --output /app/ --configuration ${CONFIGURATION_NAME}
 
 FROM mcr.microsoft.com/dotnet/core/aspnet:3.1.4-buster-slim
