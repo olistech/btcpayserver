@@ -1,9 +1,38 @@
 [
     {
-        "cryptoCode" : "USDT20_Matic",
-        "displayName": "(PoS) Tether USD ",
+        "cryptoCode" : "USDT_Matic_PoS",
+        "displayName": "(PoS) Tether USD",
         "cryptoImagePath" :"/imlegacy/liquid-tether.svg" ,
         "smartContractAddress": "0xc2132D05D31c914a87C6611C10748AEb04B58e8F",
         "divisibility": 6
+    },
+    {
+        "cryptoCode" : "DAI_Matic_PoS",
+        "displayName": "(PoS) DAI",
+        "cryptoImagePath" :"/imlegacy/liquid-tether.svg" ,
+        "smartContractAddress": "0x8f3Cf7ad23Cd3CaDbD9735AFf958023239c6A063",
+        "divisibility": 6
+    },
+    {
+        "cryptoCode" : "USDC_Matic_PoS",
+        "displayName": "(PoS) USD Coin",
+        "cryptoImagePath" :"/imlegacy/liquid-tether.svg" ,
+        "smartContractAddress": "0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174",
+        "divisibility": 6
+    },
+    {
+        "cryptoCode" : "WETH_Matic_PoS",
+        "displayName": "(PoS) Wrapped Ether",
+        "cryptoImagePath" :"/imlegacy/eth.svg" ,
+        "smartContractAddress": "0x7ceB23fD6bC0adD59E62ac25578270cFf1b9f619",
+        "divisibility": 18
+    },
+    {
+        "cryptoCode" : "WBTC_Matic_PoS",
+        "displayName": "(PoS) Wrapped BTC",
+        "cryptoImagePath" :"/imlegacy/bitcoin.svg" ,
+        "smartContractAddress": "0x1BFD67037B42Cf73acF2047067bd4F2C47D9BfD6",
+        "divisibility": 18
     }
+
 ]
