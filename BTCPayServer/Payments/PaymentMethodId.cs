@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 
 namespace BTCPayServer.Payments
 {
@@ -89,19 +90,22 @@ namespace BTCPayServer.Payments
             str ??= "";
             paymentMethodId = null;
             var parts = str.Split(Separators, StringSplitOptions.RemoveEmptyEntries);
-            if (parts.Length == 0 || parts.Length > 2)
+            if (parts.Length == 0)
                 return false;
             PaymentType type = PaymentTypes.BTCLike;
 #if ALTCOINS
             if (parts[0].ToUpperInvariant() == "XMR")
                 type = PaymentTypes.MoneroLike;
 #endif
-            if (parts.Length == 2)
+            var cryptoCode = string.Join("-", parts.Take(parts.Length-1));
+            var paymentType = parts.Last();
+            
+            if (parts.Length > 1)
             {
-                if (!PaymentTypes.TryParse(parts[1], out type))
+                if (!PaymentTypes.TryParse(paymentType, out type))
                     return false;
             }
-            paymentMethodId = new PaymentMethodId(parts[0], type);
+            paymentMethodId = new PaymentMethodId(cryptoCode, type);
             return true;
         }
         public static PaymentMethodId Parse(string str)

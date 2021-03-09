@@ -1,9 +1,16 @@
 [
     {
-        "cryptoCode" : "DERC20",
+        "cryptoCode" : "DERC20MATIC",
         "displayName": "Dummy ERC20",
         "cryptoImagePath" :"/imlegacy/liquid-tether.svg" ,
         "smartContractAddress": "0xfe4F5145f6e09952a5ba9e956ED0C25e3Fa4c7F1",
         "divisibility": 18
+    },
+    {
+        "cryptoCode" : "USDTMATIC",
+        "displayName": "(PoS) Tether USD",
+        "cryptoImagePath" :"/imlegacy/liquid-tether.svg" ,
+        "smartContractAddress": "0xc2132D05D31c914a87C6611C10748AEb04B58e8F",
+        "divisibility": 6
     }
 ]

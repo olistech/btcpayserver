@@ -29,9 +29,11 @@ namespace BTCPayServer.Rating
                 throw new ArgumentNullException(nameof(str));
             value = null;
             str = str.Trim();
-            if (str.Length > 12)
+            if (str.Length > 50)
                 return false;
+
             var splitted = str.Split(new[] { '_', '-' }, StringSplitOptions.RemoveEmptyEntries);
+          
             if (splitted.Length == 2)
             {
                 value = new CurrencyPair(splitted[0], splitted[1]);
