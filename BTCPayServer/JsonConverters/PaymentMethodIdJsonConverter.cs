@@ -13,6 +13,8 @@ namespace BTCPayServer.JsonConverters
                 return null;
             if (reader.TokenType != JsonToken.String)
                 throw new JsonObjectException("A payment method id should be a string", reader);
+            if (((string)reader.Value).Equals(""))
+                return null;
             if (PaymentMethodId.TryParse((string)reader.Value, out var result))
                 return result;
             throw new JsonObjectException("Invalid payment method id", reader);
