@@ -42,7 +42,7 @@ namespace BTCPayServer.Rating
             else if (splitted.Length == 1)
             {
                 var currencyPair = splitted[0];
-                if (currencyPair.Length < 6 || currencyPair.Length > 10)
+                if (currencyPair.Length < 6 || currencyPair.Length > 30)
                     return false;
                 if (currencyPair.Length == 6)
                 {
@@ -50,7 +50,7 @@ namespace BTCPayServer.Rating
                     return true;
                 }
 
-                for (int i = 3; i < 5; i++)
+                for (int i = 3; i < 20; i++)
                 {
                     var potentialCryptoName = currencyPair.Substring(0, i);
                     var currency = CurrencyNameTable.Instance.GetCurrencyData(potentialCryptoName, false);
