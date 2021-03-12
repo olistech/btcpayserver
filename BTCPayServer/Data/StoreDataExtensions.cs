@@ -64,6 +64,7 @@ namespace BTCPayServer.Data
 
         public static IEnumerable<ISupportedPaymentMethod> GetSupportedPaymentMethods(this StoreData storeData, BTCPayNetworkProvider networks)
         {
+            Console.WriteLine("storeData:" + storeData);
             if (storeData == null)
                 throw new ArgumentNullException(nameof(storeData));
 #pragma warning disable CS0618
@@ -72,6 +73,7 @@ namespace BTCPayServer.Data
             // Legacy stuff which should go away
             if (!string.IsNullOrEmpty(storeData.DerivationStrategy))
             {
+                Console.WriteLine("storeData.DerivationStrategy:" + storeData.DerivationStrategy);
                 btcReturned = true;
                 yield return DerivationSchemeSettings.Parse(storeData.DerivationStrategy, networks.BTC);
             }
@@ -79,6 +81,7 @@ namespace BTCPayServer.Data
 
             if (!string.IsNullOrEmpty(storeData.DerivationStrategies))
             {
+                Console.WriteLine("storeData.DerivationStrategies:" + storeData.DerivationStrategies);
                 JObject strategies = JObject.Parse(storeData.DerivationStrategies);
                 foreach (var strat in strategies.Properties())
                 {
