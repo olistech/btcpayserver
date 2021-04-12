@@ -2,21 +2,21 @@
     {
         "cryptoCode" : "USDTMATIC",
         "displayName": "(PoS) Tether USD",
-        "cryptoImagePath" :"/imlegacy/liquid-tether.svg" ,
+        "cryptoImagePath" :"/imlegacy/tether-usdt-logo.svg" ,
         "smartContractAddress": "0xc2132D05D31c914a87C6611C10748AEb04B58e8F",
         "divisibility": 6
     },
     {
         "cryptoCode" : "DAIMATIC",
         "displayName": "(PoS) DAI",
-        "cryptoImagePath" :"/imlegacy/liquid-tether.svg" ,
+        "cryptoImagePath" :"/imlegacy/dai.svg" ,
         "smartContractAddress": "0x8f3Cf7ad23Cd3CaDbD9735AFf958023239c6A063",
         "divisibility": 6
     },
     {
         "cryptoCode" : "USDCMATIC",
         "displayName": "(PoS) USD Coin",
-        "cryptoImagePath" :"/imlegacy/liquid-tether.svg" ,
+        "cryptoImagePath" :"/imlegacy/usdc.svg" ,
         "smartContractAddress": "0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174",
         "divisibility": 6
     },

@@ -2,8 +2,22 @@
     {
         "cryptoCode" : "USDTETHEREUM",
         "displayName": "Tether USD (ERC20)",
-        "cryptoImagePath" :"/imlegacy/liquid-tether.svg" ,
+        "cryptoImagePath" :"/imlegacy/tether-usdt-logo.svg" ,
         "smartContractAddress": "0xdAC17F958D2ee523a2206206994597C13D831ec7",
+        "divisibility": 6
+    },
+    {
+        "cryptoCode" : "DAIETHEREUM",
+        "displayName": "DAI (ERC20)",
+        "cryptoImagePath" :"/imlegacy/dai.svg" ,
+        "smartContractAddress": "0x6B175474E89094C44Da98b954EedeAC495271d0F",
+        "divisibility": 6
+    },
+    {
+        "cryptoCode" : "USDCETHEREUM",
+        "displayName": "USD Coin (ERC20)",
+        "cryptoImagePath" :"/imlegacy/usdc.svg" ,
+        "smartContractAddress": "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
         "divisibility": 6
     }
 ]
