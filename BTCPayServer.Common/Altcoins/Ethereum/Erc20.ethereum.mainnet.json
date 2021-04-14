@@ -19,5 +19,12 @@
         "cryptoImagePath" :"/imlegacy/usdc.svg" ,
         "smartContractAddress": "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
         "divisibility": 6
+    },
+    {
+        "cryptoCode" : "HUSDETHEREUM",
+        "displayName": "HUSD Coin (ERC20)",
+        "cryptoImagePath" :"/imlegacy/husd.svg" ,
+        "smartContractAddress": "0xdF574c24545E5FfEcb9a659c229253D4111d87e1",
+        "divisibility": 6
     }
 ]
