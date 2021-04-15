@@ -338,7 +338,7 @@ namespace BTCPayServer.Services.Altcoins.Matic.Services
 
         private async Task<long> GetBalance(MaticBTCPayNetwork network, BlockParameter blockParameter, string address)
         {
-            Console.WriteLine($"in GetBalance");
+            Console.WriteLine($"in GetBalance for {address}");
             return await Retry(_GetBalance(network, blockParameter, address), 10);
         }
 
@@ -365,8 +365,12 @@ namespace BTCPayServer.Services.Altcoins.Matic.Services
             }
             catch (Exception e) when (retryCount-- > 0){
                 Console.WriteLine($"exceptionn in task: {e}");
-                await Task.Delay(5000, default);
+                Random rnd = new Random();
+                var delay = rnd.next(2000, 30000);
+                Console.WriteLine($"waiting {delay}");
+                await Task.Delay(delay, default);
             }
+            Console.WriteLine($"calling retry");
             return await Retry(task, retryCount);
         }
 
