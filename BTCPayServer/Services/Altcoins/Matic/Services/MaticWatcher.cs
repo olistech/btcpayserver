@@ -62,6 +62,7 @@ namespace BTCPayServer.Services.Altcoins.Matic.Services
         {
             if (evt is CatchUp)
             {
+                Console.WriteLine($"in ProcessEvent CatchUp");
                 DateTimeOffset start = DateTimeOffset.Now;
                 await UpdateAnyPendingEthLikePaymentAndAddressWatchList(cancellationToken);
 
@@ -78,6 +79,7 @@ namespace BTCPayServer.Services.Altcoins.Matic.Services
 
             if (evt is MaticAddressBalanceFetched response)
             {
+                Console.WriteLine($"in ProcessEvent MaticAddressBalanceFetched");
                 if (response.ChainId != ChainId)
                 {
                     return;
@@ -212,6 +214,7 @@ namespace BTCPayServer.Services.Altcoins.Matic.Services
 
         private async Task UpdateAnyPendingEthLikePaymentAndAddressWatchList(CancellationToken cancellationToken)
         {
+            Console.WriteLine($"in UpdateAnyPendingEthLikePaymentAndAddressWatchList");
             var invoiceIds = await _invoiceRepository.GetPendingInvoices();
             if (!invoiceIds.Any())
             {
@@ -230,6 +233,7 @@ namespace BTCPayServer.Services.Altcoins.Matic.Services
 
         private async Task UpdatePaymentStates(InvoiceEntity[] invoices, CancellationToken cancellationToken)
         {
+            Console.WriteLine($"in UpdatePaymentStates");
             if (!invoices.Any())
             {
                 return;
@@ -334,15 +338,36 @@ namespace BTCPayServer.Services.Altcoins.Matic.Services
 
         private async Task<long> GetBalance(MaticBTCPayNetwork network, BlockParameter blockParameter, string address)
         {
-            if (network is ERC20MaticBTCPayNetwork erc20BTCPayNetwork)
+            Console.WriteLine($"in GetBalance");
+            return await Retry(_GetBalance(network, blockParameter, address), 10);
+        }
+
+        private async Task<long> _GetBalance(MaticBTCPayNetwork network, BlockParameter blockParameter, string address)
+        {
+                if (network is ERC20MaticBTCPayNetwork erc20BTCPayNetwork)
+                {
+                    return (long)(await Web3.Eth.GetContractHandler(erc20BTCPayNetwork.SmartContractAddress)
+                        .QueryAsync<BalanceOfFunction, BigInteger>(new BalanceOfFunction() {Owner = address}));
+                }
+                else
+                {
+                    return (long)(await Web3.Eth.GetBalance.SendRequestAsync(address, blockParameter)).Value;
+                }
+        }
+
+        private static async Task<T> Retry<T>(Task<T> task, int retryCount)
+        {
+            Console.WriteLine($"in retry, retryCount: {retryCount}");
+            try
             {
-                return (long)(await Web3.Eth.GetContractHandler(erc20BTCPayNetwork.SmartContractAddress)
-                    .QueryAsync<BalanceOfFunction, BigInteger>(new BalanceOfFunction() {Owner = address}));
+                var result = await task;
+                return result;
             }
-            else
-            {
-                return (long)(await Web3.Eth.GetBalance.SendRequestAsync(address, blockParameter)).Value;
+            catch (Exception e) when (retryCount-- > 0){
+                Console.WriteLine($"exceptionn in task: {e}");
+                await Task.Delay(5000, default);
             }
+            return await Retry(task, retryCount);
         }
 
         public MaticWatcher(int chainId, MaticLikeConfiguration config,
