@@ -83,7 +83,7 @@ namespace BTCPayServer
         static EthereumNetworkData LoadEthereumNetworkData(string networkType, string ethereumNetwork)
         {
             string filename = "NetworkInfo" + "." + ethereumNetwork + "." + networkType + ".json";
-            
+
             var content = ReadResource(filename);
             var networkInfo = JsonConvert.DeserializeObject<EthereumNetworkData>(content);
             return networkInfo;

@@ -1,0 +1,9 @@
+{
+    "name" : "Avalanche-Mainnet",
+    "chainId": 43114,
+    "coinType": 1,
+    "baseTokenSymbol" : "AVAX",
+    "baseTokenDivisibility" : 18,
+    "explorer": "https://cchain.explorer.avax.network/address/{0}/transactions"
+    
+}

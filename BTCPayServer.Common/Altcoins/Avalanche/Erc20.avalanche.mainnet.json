@@ -1,0 +1,31 @@
+[
+    {
+        "cryptoCode" : "USDTAVA",
+        "displayName": "Tether USD (USDT)",
+        "cryptoImagePath" :"/imlegacy/tether-usdt-logo.svg" ,
+        "smartContractAddress": "0xde3A24028580884448a5397872046a019649b084",
+        "divisibility": 6
+    },
+    {
+        "cryptoCode" : "DAIAVA",
+        "displayName": "Dai Stablecoin (DAI)",
+        "cryptoImagePath" :"/imlegacy/dai.svg" ,
+        "smartContractAddress": "0xbA7dEebBFC5fA1100Fb055a87773e1E99Cd3507a",
+        "divisibility": 18
+    },
+    {
+        "cryptoCode" : "WETHAVA",
+        "displayName": "Wrapped Ether (WETH)",
+        "cryptoImagePath" :"/imlegacy/eth.svg" ,
+        "smartContractAddress": "0x71fe4e867A57AFd4A55bd593DCcc7B5dc01DD265",
+        "divisibility": 18
+    },
+    {
+        "cryptoCode" : "WBTCAVA",
+        "displayName": "Wrapped BTC (WBTC)",
+        "cryptoImagePath" :"/imlegacy/bitcoin.svg" ,
+        "smartContractAddress": "0x408D4cD0ADb7ceBd1F1A1C33A0Ba2098E1295bAB",
+        "divisibility": 18
+    }
+
+]

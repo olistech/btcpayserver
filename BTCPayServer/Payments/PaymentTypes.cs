@@ -3,6 +3,7 @@ using System;
 using BTCPayServer.Services.Altcoins.Ethereum.Payments;
 using BTCPayServer.Services.Altcoins.Monero.Payments;
 using BTCPayServer.Services.Altcoins.Matic.Payments;
+using BTCPayServer.Services.Altcoins.Avalanche.Payments;
 #endif
 using BTCPayServer.Services.Invoices;
 using NBitcoin;
@@ -52,6 +53,9 @@ namespace BTCPayServer.Payments
                     break;
                 case "maticlike":
                     type = MaticPaymentType.Instance;
+                    break;
+                case "avalanchelike":
+                    type = AvalanchePaymentType.Instance;
                     break;
 #endif
                 default:

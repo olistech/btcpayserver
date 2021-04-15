@@ -25,6 +25,6 @@
         "displayName": "HUSD Coin (ERC20)",
         "cryptoImagePath" :"/imlegacy/husd.svg" ,
         "smartContractAddress": "0xdF574c24545E5FfEcb9a659c229253D4111d87e1",
-        "divisibility": 6
+        "divisibility": 8
     }
 ]

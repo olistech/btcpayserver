@@ -1,0 +1,16 @@
+[   
+    {
+        "cryptoCode" : "USDTAVA",
+        "displayName": "Tether USD (USDT)",
+        "cryptoImagePath" :"/imlegacy/liquid-tether.svg" ,
+        "smartContractAddress": "0x1ac26e7c1b8becb6891c463b638d05c796c2bbbc",
+        "divisibility": 6
+    },
+    {
+        "cryptoCode" : "WETHAVA",
+        "displayName": "Wrapped Ether (WETH)",
+        "cryptoImagePath" :"/imlegacy/eth.svg" ,
+        "smartContractAddress": "0xb767287a7143759f294cfb7b1adbca1140f3de71",
+        "divisibility": 18
+    }
+]

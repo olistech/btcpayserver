@@ -59,6 +59,7 @@ using Serilog;
 using BTCPayServer.Services.Altcoins.Monero;
 using BTCPayServer.Services.Altcoins.Ethereum;
 using BTCPayServer.Services.Altcoins.Matic;
+using BTCPayServer.Services.Altcoins.Avalanche;
 #endif
 namespace BTCPayServer.Hosting
 {
@@ -91,6 +92,7 @@ namespace BTCPayServer.Hosting
             services.AddMoneroLike();
             services.AddEthereumLike();
             services.AddMaticLike();
+            services.AddAvalancheLike();
 #endif
             services.TryAddSingleton<SettingsRepository>();
             services.TryAddSingleton<ISettingsRepository>(provider => provider.GetService<SettingsRepository>());

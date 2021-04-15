@@ -1,0 +1,27 @@
+@using BTCPayServer.Services.Altcoins.Avalanche.Services
+@inject BTCPayNetworkProvider BTCPayNetworkProvider
+@inject AvalancheService AvalancheService;
+
+@inject SignInManager<ApplicationUser> SignInManager;
+@{
+    var networks = BTCPayNetworkProvider.GetAll().OfType<AvalancheBTCPayNetwork>().OrderBy(network => network.ChainId).Where(network => network.ShowSyncSummary);
+}
+
+@foreach (var network in networks)
+{
+    <h4>@network.CryptoCode (Chain ID: @network.ChainId) @(network is ERC20AvalancheBTCPayNetwork is true ? "(ERC20)" : "")</h4>
+    <ul>
+        @if (!AvalancheService.IsAvailable(network.CryptoCode, out var error))
+        {
+            <li>
+                @(error??"Web3 has not yet been configured")
+
+
+                @if (SignInManager.IsSignedIn(User) && User.IsInRole(Roles.ServerAdmin))
+                {
+                    <a asp-action="UpdateChainConfig" asp-controller="AvalancheConfig" asp-route-chainId="@network.ChainId">Configure Web3</a>
+                }
+            </li>
+        }
+    </ul>
+}

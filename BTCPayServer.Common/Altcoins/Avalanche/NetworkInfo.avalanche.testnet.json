@@ -1,0 +1,8 @@
+{
+    "name" : "Avalanche Testnet",
+    "chainId": 43113,
+    "coinType": 60,
+    "baseTokenSymbol" : "AVAX",
+    "baseTokenDivisibility" : 18,
+    "explorer": "https://testnet.avascan.info/blockchain/c/address/{0}"
+}

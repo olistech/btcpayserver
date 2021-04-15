@@ -14,24 +14,22 @@ namespace BTCPayServer
     public partial class BTCPayNetworkProvider
     {
         
-        public void InitMatic()
+        public void InitAvalanche()
         {
             // this will add the "base token" of the network
-            // EG:
-            // * on L2 Matic network --> MATIC 
             // read from end variable   
-            var ethereumNetwork = "matic";
+            var ethereumNetwork = "avalanche";
            
             string networkType = NetworkType == NetworkType.Mainnet? "mainnet" : "testnet";
             var ethereumNetworkData = LoadEthereumNetworkData(networkType, ethereumNetwork);
           
-            Add(new MaticBTCPayNetwork()
+            Add(new AvalancheBTCPayNetwork()
             {
                 CryptoCode = ethereumNetworkData.BaseTokenSymbol,
-                DisplayName = "Matic",
-                DefaultRateRules = new[] {"MATIC_X = ETH_BTC * BTC_X", "MATIC_BTC = kraken(MATIC_BTC)"},
+                DisplayName = "Avalanche",
+                DefaultRateRules = new[] {"AVAX_X = ETH_BTC * BTC_X", "AVAX_BTC = kraken(AVAX_BTC)"},
                 BlockExplorerLink = ethereumNetworkData.Explorer,
-                CryptoImagePath = "/imlegacy/eth.png",
+                CryptoImagePath = "/imlegacy/avax.svg",
                 ShowSyncSummary = true,
                 CoinType = ethereumNetworkData.CoinType,
                 ChainId = ethereumNetworkData.ChainId,
@@ -39,9 +37,9 @@ namespace BTCPayServer
             });
         }
         
-        public void InitMaticERC20()
+        public void InitAvalancheERC20()
         {
-            var ethereumNetwork = "matic";
+            var ethereumNetwork = "avalanche";
             string networkType = NetworkType == NetworkType.Mainnet? "mainnet" : "testnet";
             var ethereumNetworkData = LoadEthereumNetworkData(networkType, ethereumNetwork);
             string explorer = ethereumNetworkData.Explorer;
@@ -52,7 +50,7 @@ namespace BTCPayServer
             foreach(KeyValuePair<string, BTCPayServer.ERC20Data> entry in ERC20Tokens)
             {
                 var token = entry.Value;
-                Add(new ERC20MaticBTCPayNetwork()
+                Add(new ERC20AvalancheBTCPayNetwork()
                 {
                     CryptoCode = token.CryptoCode,
                     DisplayName = token.DisplayName,
