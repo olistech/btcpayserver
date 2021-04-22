@@ -71,9 +71,9 @@ namespace BTCPayServer.Services.Altcoins.Matic.Services
                 }
 
                 TimeSpan diff = start - DateTimeOffset.Now;
-                if (diff.TotalSeconds < 5)
+                if (diff.TotalSeconds < 15)
                 {
-                    _ = Task.Delay(TimeSpan.FromSeconds(5 - diff.TotalSeconds), cancellationToken).ContinueWith(task =>
+                    _ = Task.Delay(TimeSpan.FromSeconds(15 - diff.TotalSeconds), cancellationToken).ContinueWith(task =>
                     {
                         _eventAggregator.Publish(new CatchUp());
                         return Task.CompletedTask;
