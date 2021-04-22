@@ -63,7 +63,11 @@ namespace BTCPayServer.Services.Altcoins.Avalanche.Services
             if (evt is CatchUp)
             {
                 DateTimeOffset start = DateTimeOffset.Now;
-                await UpdateAnyPendingEthLikePaymentAndAddressWatchList(cancellationToken);
+                try {
+                    await UpdateAnyPendingEthLikePaymentAndAddressWatchList(cancellationToken);
+                } catch (Exception e) {
+                    Console.WriteLine($"catched exception {e} now carry on...");
+                }
 
                 TimeSpan diff = start - DateTimeOffset.Now;
                 if (diff.TotalSeconds < 5)

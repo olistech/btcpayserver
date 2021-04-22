@@ -64,7 +64,11 @@ namespace BTCPayServer.Services.Altcoins.Matic.Services
             {
                 Console.WriteLine($"in ProcessEvent CatchUp");
                 DateTimeOffset start = DateTimeOffset.Now;
-                await UpdateAnyPendingEthLikePaymentAndAddressWatchList(cancellationToken);
+                try {
+                    await UpdateAnyPendingEthLikePaymentAndAddressWatchList(cancellationToken);
+                } catch (Exception e) {
+                    Console.WriteLine($"catched exception {e} now carry on...");
+                }
 
                 TimeSpan diff = start - DateTimeOffset.Now;
                 if (diff.TotalSeconds < 5)
@@ -79,7 +83,7 @@ namespace BTCPayServer.Services.Altcoins.Matic.Services
 
             if (evt is MaticAddressBalanceFetched response)
             {
-                Console.WriteLine($"in ProcessEvent MaticAddressBalanceFetched");
+                Console.WriteLine($"in ProcessEvent MaticAddressBalanceFetched for {response.Address} amount {response.Amount}");
                 if (response.ChainId != ChainId)
                 {
                     return;
@@ -103,6 +107,7 @@ namespace BTCPayServer.Services.Altcoins.Matic.Services
 
                 if (existingPayment is null && response.Amount > 0)
                 {
+                    Console.WriteLine($"in new payment for {response.Address}");
                     //new payment
                     var paymentData = new MaticLikePaymentData()
                     {
@@ -269,6 +274,7 @@ namespace BTCPayServer.Services.Altcoins.Matic.Services
 
                     tasks.Add(Task.WhenAll(existingPaymentData.Select(async tuple =>
                     {
+                        //await Task.Delay(new Random().Next(2000,30000));
                         var bal = await GetBalance(network, blockParameter, tuple.PaymentData.Address);
                         _eventAggregator.Publish(new MaticAddressBalanceFetched()
                         {
@@ -293,6 +299,7 @@ namespace BTCPayServer.Services.Altcoins.Matic.Services
                     var blockParameter = BlockParameter.CreatePending();
                     tasks.AddRange(noAccountedPaymentInvoices.Select(async tuple =>
                     {
+                        //await Task.Delay(new Random().Next(2000,30000));
                         var bal = await GetBalance(network, blockParameter,
                             tuple.PaymentMethodDetails.GetPaymentMethodDetails().GetPaymentDestination());
                         _eventAggregator.Publish(new MaticAddressBalanceFetched()
@@ -346,11 +353,13 @@ namespace BTCPayServer.Services.Altcoins.Matic.Services
         {
                 if (network is ERC20MaticBTCPayNetwork erc20BTCPayNetwork)
                 {
+                    Console.WriteLine($"calling GetContractHandler on contract {erc20BTCPayNetwork.SmartContractAddress} for address {address}");
                     return (long)(await Web3.Eth.GetContractHandler(erc20BTCPayNetwork.SmartContractAddress)
                         .QueryAsync<BalanceOfFunction, BigInteger>(new BalanceOfFunction() {Owner = address}));
                 }
                 else
                 {
+                    Console.WriteLine($"calling GetBalance for address {address}");
                     return (long)(await Web3.Eth.GetBalance.SendRequestAsync(address, blockParameter)).Value;
                 }
         }
@@ -364,13 +373,15 @@ namespace BTCPayServer.Services.Altcoins.Matic.Services
                 return result;
             }
             catch (Exception e) when (retryCount-- > 0){
-                Console.WriteLine($"exceptionn in task: {e}");
-                Random rnd = new Random();
-                var delay = rnd.next(2000, 30000);
-                Console.WriteLine($"waiting {delay}");
-                await Task.Delay(delay, default);
+                Console.WriteLine($"exception in task: {e}");
             }
-            Console.WriteLine($"calling retry");
+
+            Random rnd = new Random();
+            var delay = rnd.Next(60000, 120000);
+            Console.WriteLine($"waiting {delay}");
+            await Task.Delay(delay);
+            Console.WriteLine($"done waiting {delay}");
+            Console.WriteLine($"calling retry");    
             return await Retry(task, retryCount);
         }
 
