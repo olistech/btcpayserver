@@ -32,6 +32,7 @@ using BTCPayServer.Models.WalletViewModels;
 using BTCPayServer.Payments;
 using BTCPayServer.Payments.Bitcoin;
 using BTCPayServer.Payments.Lightning;
+using BTCPayServer.Payments.PayJoin.Sender;
 using BTCPayServer.Rating;
 using BTCPayServer.Security.Bitpay;
 using BTCPayServer.Services;
@@ -43,7 +44,6 @@ using BTCPayServer.Services.Rates;
 using BTCPayServer.Tests.Logging;
 using BTCPayServer.U2F.Models;
 using BTCPayServer.Validation;
-using DBriize.Utils;
 using ExchangeSharp;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -263,21 +263,12 @@ namespace BTCPayServer.Tests
                     ManageController.AddApiKeyViewModel.PermissionValueItem.PermissionDescriptions.Where(pair =>
                         !Policies.IsStorePolicy(pair.Key) && !Policies.IsServerPolicy(pair.Key));
 
-                description = description.ReplaceMultiple(new Dictionary<string, string>()
-                {
-                    {
-                        "#OTHERPERMISSIONS#",
-                        string.Join("\n", otherPolicies.Select(pair => $"* `{pair.Key}`: {pair.Value.Title}"))
-                    },
-                    {
-                        "#SERVERPERMISSIONS#",
-                        string.Join("\n", serverPolicies.Select(pair => $"* `{pair.Key}`: {pair.Value.Title}"))
-                    },
-                    {
-                        "#STOREPERMISSIONS#",
-                        string.Join("\n", storePolicies.Select(pair => $"* `{pair.Key}`: {pair.Value.Title}"))
-                    }
-                });
+                description = description.Replace("#OTHERPERMISSIONS#",
+                        string.Join("\n", otherPolicies.Select(pair => $"* `{pair.Key}`: {pair.Value.Title}")))
+                    .Replace("#SERVERPERMISSIONS#",
+                        string.Join("\n", serverPolicies.Select(pair => $"* `{pair.Key}`: {pair.Value.Title}")))
+                    .Replace("#STOREPERMISSIONS#",
+                        string.Join("\n", storePolicies.Select(pair => $"* `{pair.Key}`: {pair.Value.Title}")));
                 Logs.Tester.LogInformation(description);
                                 
                 var sresp = Assert
@@ -417,11 +408,11 @@ namespace BTCPayServer.Tests
         [Trait("Fast", "Fast")]
         public void CanCalculateCryptoDue()
         {
-            var networkProvider = new BTCPayNetworkProvider(NetworkType.Regtest);
+            var networkProvider = new BTCPayNetworkProvider(ChainName.Regtest);
             var paymentMethodHandlerDictionary = new PaymentMethodHandlerDictionary(new IPaymentMethodHandler[]
             {
                 new BitcoinLikePaymentHandler(null, networkProvider, null, null, null),
-                new LightningLikePaymentHandler(null, null, networkProvider, null, null),
+                new LightningLikePaymentHandler(null, null, networkProvider, null, null, null),
             });
             var entity = new InvoiceEntity();
             entity.Networks = networkProvider;
@@ -705,11 +696,11 @@ namespace BTCPayServer.Tests
         [Trait("Fast", "Fast")]
         public void CanAcceptInvoiceWithTolerance()
         {
-            var networkProvider = new BTCPayNetworkProvider(NetworkType.Regtest);
+            var networkProvider = new BTCPayNetworkProvider(ChainName.Regtest);
             var paymentMethodHandlerDictionary = new PaymentMethodHandlerDictionary(new IPaymentMethodHandler[]
             {
                 new BitcoinLikePaymentHandler(null, networkProvider, null, null, null),
-                new LightningLikePaymentHandler(null, null, networkProvider, null, null),
+                new LightningLikePaymentHandler(null, null, networkProvider, null, null, null),
             });
             var entity = new InvoiceEntity();
             entity.Networks = networkProvider;
@@ -883,7 +874,7 @@ namespace BTCPayServer.Tests
         [Trait("Fast", "Fast")]
         public async Task CanEnumerateTorServices()
         {
-            var tor = new TorServices(new BTCPayNetworkProvider(NetworkType.Regtest),
+            var tor = new TorServices(new BTCPayNetworkProvider(ChainName.Regtest),
                 new BTCPayServerOptions() { TorrcFile = TestUtils.GetTestDataFullPath("Tor/torrc") });
             await tor.Refresh();
 
@@ -904,7 +895,7 @@ namespace BTCPayServer.Tests
             await tester.StartAsync();
             await tester.EnsureChannelsSetup();
             var user = tester.NewAccount();
-            await user.GrantAccessAsync();
+            await user.GrantAccessAsync(true);
             await user.RegisterDerivationSchemeAsync("BTC");
             await user.RegisterLightningNodeAsync("BTC", LightningConnectionType.CLightning);
             user.SetNetworkFeeMode(NetworkFeeMode.Never);
@@ -954,7 +945,7 @@ namespace BTCPayServer.Tests
                 await tester.StartAsync();
                 await tester.EnsureChannelsSetup();
                 var user = tester.NewAccount();
-                user.GrantAccess();
+                user.GrantAccess(true);
                 var storeController = user.GetController<StoresController>();
                 Assert.IsType<ViewResult>(storeController.UpdateStore());
                 Assert.IsType<ViewResult>(storeController.AddLightningNode(user.StoreId, "BTC"));
@@ -1021,7 +1012,7 @@ namespace BTCPayServer.Tests
                 await tester.StartAsync();
                 await tester.EnsureChannelsSetup();
                 var user = tester.NewAccount();
-                user.GrantAccess();
+                user.GrantAccess(true);
                 user.RegisterLightningNode("BTC", type);
                 user.RegisterDerivationScheme("BTC");
 
@@ -1180,7 +1171,7 @@ namespace BTCPayServer.Tests
         [Trait("Integration", "Integration")]
         public void CanSolveTheDogesRatesOnKraken()
         {
-            var provider = new BTCPayNetworkProvider(NetworkType.Mainnet);
+            var provider = new BTCPayNetworkProvider(ChainName.Mainnet);
             var factory = CreateBTCPayRateFactory();
             var fetcher = new RateFetcher(factory);
 
@@ -1211,7 +1202,7 @@ namespace BTCPayServer.Tests
                     });
                 }
                 var httpFactory = tester.PayTester.GetService<IHttpClientFactory>();
-                var client = httpFactory.CreateClient(PayjoinClient.PayjoinOnionNamedClient);
+                var client = httpFactory.CreateClient(PayjoinServerCommunicator.PayjoinOnionNamedClient);
                 Assert.NotNull(client);
                 var response = await client.GetAsync("https://check.torproject.org/");
                 response.EnsureSuccessStatusCode();
@@ -1230,7 +1221,7 @@ namespace BTCPayServer.Tests
                 AssertConnectionDropped();
                 client.Dispose();
                 AssertConnectionDropped();
-                client = httpFactory.CreateClient(PayjoinClient.PayjoinOnionNamedClient);
+                client = httpFactory.CreateClient(PayjoinServerCommunicator.PayjoinOnionNamedClient);
                 response = await client.GetAsync("http://explorerzydxu5ecjrkwceayqybizmpjjznk5izmitf2modhcusuqlid.onion/");
                 response.EnsureSuccessStatusCode();
                 AssertConnectionDropped();
@@ -2058,7 +2049,7 @@ namespace BTCPayServer.Tests
         [Trait("Fast", "Fast")]
         public void HasCurrencyDataForNetworks()
         {
-            var btcPayNetworkProvider = new BTCPayNetworkProvider(NetworkType.Regtest);
+            var btcPayNetworkProvider = new BTCPayNetworkProvider(ChainName.Regtest);
             foreach (var network in btcPayNetworkProvider.GetAll())
             {
                 var cd = CurrencyNameTable.Instance.GetCurrencyData(network.CryptoCode, false);
@@ -2135,7 +2126,7 @@ namespace BTCPayServer.Tests
                 await tester.StartAsync();
                 await tester.EnsureChannelsSetup();
                 var user = tester.NewAccount();
-                user.GrantAccess();
+                user.GrantAccess(true);
                 user.RegisterDerivationScheme("BTC", ScriptPubKeyType.Segwit);
                 user.RegisterLightningNode("BTC", LightningConnectionType.CLightning);
 
@@ -2193,7 +2184,7 @@ namespace BTCPayServer.Tests
                 await tester.StartAsync();
                 await tester.EnsureChannelsSetup();
                 var user = tester.NewAccount();
-                user.GrantAccess();
+                user.GrantAccess(true);
                 user.RegisterLightningNode("BTC", LightningConnectionType.Charge);
                 var vm = Assert.IsType<CheckoutExperienceViewModel>(Assert
                     .IsType<ViewResult>(user.GetController<StoresController>().CheckoutExperience()).Model);
@@ -2996,7 +2987,7 @@ namespace BTCPayServer.Tests
         [Trait("Integration", "Integration")]
         public void CanGetRateCryptoCurrenciesByDefault()
         {
-            var provider = new BTCPayNetworkProvider(NetworkType.Mainnet);
+            var provider = new BTCPayNetworkProvider(ChainName.Mainnet);
             var factory = CreateBTCPayRateFactory();
             var fetcher = new RateFetcher(factory);
             var pairs =
@@ -3068,35 +3059,35 @@ namespace BTCPayServer.Tests
             var unusedUri = new Uri("https://toto.com");
             Assert.True(ExternalConnectionString.TryParse("server=/test", out var connStr, out var error));
             var expanded = await connStr.Expand(new Uri("https://toto.com"), ExternalServiceTypes.Charge,
-                NetworkType.Mainnet);
+                ChainName.Mainnet);
             Assert.Equal(new Uri("https://toto.com/test"), expanded.Server);
             expanded = await connStr.Expand(new Uri("http://toto.onion"), ExternalServiceTypes.Charge,
-                NetworkType.Mainnet);
+                ChainName.Mainnet);
             Assert.Equal(new Uri("http://toto.onion/test"), expanded.Server);
             await Assert.ThrowsAsync<SecurityException>(() =>
-                connStr.Expand(new Uri("http://toto.com"), ExternalServiceTypes.Charge, NetworkType.Mainnet));
-            await connStr.Expand(new Uri("http://toto.com"), ExternalServiceTypes.Charge, NetworkType.Testnet);
+                connStr.Expand(new Uri("http://toto.com"), ExternalServiceTypes.Charge, ChainName.Mainnet));
+            await connStr.Expand(new Uri("http://toto.com"), ExternalServiceTypes.Charge, ChainName.Testnet);
 
             // Make sure absolute paths are not expanded
             Assert.True(ExternalConnectionString.TryParse("server=https://tow/test", out connStr, out error));
             expanded = await connStr.Expand(new Uri("https://toto.com"), ExternalServiceTypes.Charge,
-                NetworkType.Mainnet);
+                ChainName.Mainnet);
             Assert.Equal(new Uri("https://tow/test"), expanded.Server);
 
             // Error if directory not exists
             Assert.True(ExternalConnectionString.TryParse($"server={unusedUri};macaroondirectorypath=pouet",
                 out connStr, out error));
             await Assert.ThrowsAsync<DirectoryNotFoundException>(() =>
-                connStr.Expand(unusedUri, ExternalServiceTypes.LNDGRPC, NetworkType.Mainnet));
+                connStr.Expand(unusedUri, ExternalServiceTypes.LNDGRPC, ChainName.Mainnet));
             await Assert.ThrowsAsync<DirectoryNotFoundException>(() =>
-                connStr.Expand(unusedUri, ExternalServiceTypes.LNDRest, NetworkType.Mainnet));
-            await connStr.Expand(unusedUri, ExternalServiceTypes.Charge, NetworkType.Mainnet);
+                connStr.Expand(unusedUri, ExternalServiceTypes.LNDRest, ChainName.Mainnet));
+            await connStr.Expand(unusedUri, ExternalServiceTypes.Charge, ChainName.Mainnet);
 
             var macaroonDirectory = CreateDirectory();
             Assert.True(ExternalConnectionString.TryParse(
                 $"server={unusedUri};macaroondirectorypath={macaroonDirectory}", out connStr, out error));
-            await connStr.Expand(unusedUri, ExternalServiceTypes.LNDGRPC, NetworkType.Mainnet);
-            expanded = await connStr.Expand(unusedUri, ExternalServiceTypes.LNDRest, NetworkType.Mainnet);
+            await connStr.Expand(unusedUri, ExternalServiceTypes.LNDGRPC, ChainName.Mainnet);
+            expanded = await connStr.Expand(unusedUri, ExternalServiceTypes.LNDRest, ChainName.Mainnet);
             Assert.NotNull(expanded.Macaroons);
             Assert.Null(expanded.MacaroonFilePath);
             Assert.Null(expanded.Macaroons.AdminMacaroon);
@@ -3106,7 +3097,7 @@ namespace BTCPayServer.Tests
             File.WriteAllBytes($"{macaroonDirectory}/admin.macaroon", new byte[] { 0xaa });
             File.WriteAllBytes($"{macaroonDirectory}/invoice.macaroon", new byte[] { 0xab });
             File.WriteAllBytes($"{macaroonDirectory}/readonly.macaroon", new byte[] { 0xac });
-            expanded = await connStr.Expand(unusedUri, ExternalServiceTypes.LNDRest, NetworkType.Mainnet);
+            expanded = await connStr.Expand(unusedUri, ExternalServiceTypes.LNDRest, ChainName.Mainnet);
             Assert.NotNull(expanded.Macaroons.AdminMacaroon);
             Assert.NotNull(expanded.Macaroons.InvoiceMacaroon);
             Assert.Equal("ab", expanded.Macaroons.InvoiceMacaroon.Hex);
@@ -3116,7 +3107,7 @@ namespace BTCPayServer.Tests
             Assert.True(ExternalConnectionString.TryParse(
                 $"server={unusedUri};cookiefilepath={macaroonDirectory}/charge.cookie", out connStr, out error));
             File.WriteAllText($"{macaroonDirectory}/charge.cookie", "apitoken");
-            expanded = await connStr.Expand(unusedUri, ExternalServiceTypes.Charge, NetworkType.Mainnet);
+            expanded = await connStr.Expand(unusedUri, ExternalServiceTypes.Charge, ChainName.Mainnet);
             Assert.Equal("apitoken", expanded.APIToken);
         }
 
@@ -3201,10 +3192,12 @@ namespace BTCPayServer.Tests
         [Trait("Fast", "Fast")]
         public void ParseDerivationSchemeSettings()
         {
-            var mainnet = new BTCPayNetworkProvider(NetworkType.Mainnet).GetNetwork<BTCPayNetwork>("BTC");
+            var mainnet = new BTCPayNetworkProvider(ChainName.Mainnet).GetNetwork<BTCPayNetwork>("BTC");
             var root = new Mnemonic(
                     "usage fever hen zero slide mammal silent heavy donate budget pulse say brain thank sausage brand craft about save attract muffin advance illegal cabbage")
                 .DeriveExtKey();
+
+            // ColdCard
             Assert.True(DerivationSchemeSettings.TryParseFromWalletFile(
                 "{\"keystore\": {\"ckcc_xpub\": \"xpub661MyMwAqRbcGVBsTGeNZN6QGVHmMHLdSA4FteGsRrEriu4pnVZMZWnruFFFXkMnyoBjyHndD3Qwcfz4MPzBUxjSevweNFQx7SAYZATtcDw\", \"xpub\": \"ypub6WWc2gWwHbdnAAyJDnR4SPL1phRh7REqrPBfZeizaQ1EmTshieRXJC3Z5YoU4wkcdKHEjQGkh6AYEzCQC1Kz3DNaWSwdc1pc8416hAjzqyD\", \"label\": \"Coldcard Import 0x60d1af8b\", \"ckcc_xfp\": 1624354699, \"type\": \"hardware\", \"hw_type\": \"coldcard\", \"derivation\": \"m/49'/0'/0'\"}, \"wallet_type\": \"standard\", \"use_encryption\": false, \"seed_version\": 17}",
                 mainnet, out var settings));
@@ -3218,8 +3211,7 @@ namespace BTCPayServer.Tests
                 settings.AccountOriginal);
             Assert.Equal(root.Derive(new KeyPath("m/49'/0'/0'")).Neuter().PubKey.WitHash.ScriptPubKey.Hash.ScriptPubKey,
                 settings.AccountDerivation.GetDerivation().ScriptPubKey);
-
-            var testnet = new BTCPayNetworkProvider(NetworkType.Testnet).GetNetwork<BTCPayNetwork>("BTC");
+            var testnet = new BTCPayNetworkProvider(ChainName.Testnet).GetNetwork<BTCPayNetwork>("BTC");
 
             // Should be legacy
             Assert.True(DerivationSchemeSettings.TryParseFromWalletFile(
@@ -3239,6 +3231,15 @@ namespace BTCPayServer.Tests
                 "{\"keystore\": {\"ckcc_xpub\": \"tpubD6NzVbkrYhZ4YHNiuTdTmHRmbcPRLfqgyneZFCL1mkzkUBjXriQShxTh9HL34FK2mhieasJVk9EzJrUfkFqRNQBjiXgx3n5BhPkxKBoFmaS\", \"xpub\": \"vpub5YjYxTemJ39tFRnuAhwduyxG2tKGjoEpmvqVQRPqdYrqa6YGoeSzBtHXaJUYB19zDbXs3JjbEcVWERjQBPf9bEfUUMZNMv1QnMyHV8JPqyf\", \"label\": \"Coldcard Import 0x60d1af8b\", \"ckcc_xfp\": 1624354699, \"type\": \"hardware\", \"hw_type\": \"coldcard\", \"derivation\": \"m/84'/1'/0'\"}, \"wallet_type\": \"standard\", \"use_encryption\": false, \"seed_version\": 17}",
                 testnet, out settings));
             Assert.True(settings.AccountDerivation is DirectDerivationStrategy s3 && s3.Segwit);
+
+            // Specter
+            Assert.True(DerivationSchemeSettings.TryParseFromWalletFile(
+                "{\"label\": \"Specter\", \"blockheight\": 123456, \"descriptor\": \"wpkh([8bafd160/49h/0h/0h]xpub661MyMwAqRbcGVBsTGeNZN6QGVHmMHLdSA4FteGsRrEriu4pnVZMZWnruFFFXkMnyoBjyHndD3Qwcfz4MPzBUxjSevweNFQx7SAYZATtcDw/0/*)#9x4vkw48\"}",
+                mainnet, out var specter));
+            Assert.Equal(root.GetPublicKey().GetHDFingerPrint(), specter.AccountKeySettings[0].RootFingerprint);
+            Assert.Equal(specter.AccountKeySettings[0].RootFingerprint, hd);
+            Assert.Equal("49'/0'/0'", specter.AccountKeySettings[0].AccountKeyPath.ToString());
+            Assert.Equal("Specter", specter.Label);
         }
 
 
@@ -3409,7 +3410,86 @@ namespace BTCPayServer.Tests
                 Assert.False(fn.Seen);
             }
         }
-       
+
+        [Fact(Timeout = TestTimeout)]
+        [Trait("Integration", "Integration")]
+        public async Task CanDoLightningInternalNodeMigration()
+        {
+            using (var tester = ServerTester.Create(newDb: true))
+            {
+                tester.ActivateLightning(LightningConnectionType.CLightning);
+                await tester.StartAsync();
+                var acc = tester.NewAccount();
+                await acc.GrantAccessAsync(true);
+                await acc.CreateStoreAsync();
+                
+                // Test if legacy DerivationStrategy column is converted to DerivationStrategies
+                var store = await tester.PayTester.StoreRepository.FindStore(acc.StoreId);
+                var xpub = "tpubDDmH1briYfZcTDMEc7uMEA5hinzjUTzR9yMC1drxTMeiWyw1VyCqTuzBke6df2sqbfw9QG6wbgTLF5yLjcXsZNaXvJMZLwNEwyvmiFWcLav";
+                var derivation = $"{xpub}-[legacy]";
+                store.DerivationStrategy = derivation;
+                await tester.PayTester.StoreRepository.UpdateStore(store);
+                await RestartMigration(tester);
+                store = await tester.PayTester.StoreRepository.FindStore(acc.StoreId);
+                Assert.True(string.IsNullOrEmpty(store.DerivationStrategy));
+                var v = (DerivationSchemeSettings)store.GetSupportedPaymentMethods(tester.NetworkProvider).First();
+                Assert.Equal(derivation, v.AccountDerivation.ToString());
+                Assert.Equal(derivation, v.AccountOriginal.ToString());
+                Assert.Equal(xpub, v.SigningKey.ToString());
+                Assert.Equal(xpub, v.GetSigningAccountKeySettings().AccountKey.ToString());
+                
+                await acc.RegisterLightningNodeAsync("BTC", LightningConnectionType.CLightning, true);
+                store = await tester.PayTester.StoreRepository.FindStore(acc.StoreId);
+                var lnMethod = store.GetSupportedPaymentMethods(tester.NetworkProvider).OfType<LightningSupportedPaymentMethod>().First();
+                Assert.NotNull(lnMethod.GetExternalLightningUrl());
+                await RestartMigration(tester);
+
+                store = await tester.PayTester.StoreRepository.FindStore(acc.StoreId);
+                lnMethod = store.GetSupportedPaymentMethods(tester.NetworkProvider).OfType<LightningSupportedPaymentMethod>().First();
+                Assert.Null(lnMethod.GetExternalLightningUrl());
+
+                // Test if legacy lightning charge settings are converted to LightningConnectionString
+                store.DerivationStrategies = new JObject()
+                {
+                    new JProperty("BTC_LightningLike", new JObject()
+                    {
+                        new JProperty("LightningChargeUrl", "http://mycharge.com/"),
+                        new JProperty("Username", "usr"),
+                        new JProperty("Password", "pass"),
+                        new JProperty("CryptoCode", "BTC"),
+                        new JProperty("PaymentId", "someshit"),
+                    })
+                }.ToString();
+                await tester.PayTester.StoreRepository.UpdateStore(store);
+                await RestartMigration(tester);
+
+                store = await tester.PayTester.StoreRepository.FindStore(acc.StoreId);
+                lnMethod = store.GetSupportedPaymentMethods(tester.NetworkProvider).OfType<LightningSupportedPaymentMethod>().First();
+                Assert.NotNull(lnMethod.GetExternalLightningUrl());
+
+                var url = lnMethod.GetExternalLightningUrl();
+                Assert.Equal(LightningConnectionType.Charge, url.ConnectionType);
+                Assert.Equal("pass", url.Password);
+                Assert.Equal("usr", url.Username);
+
+                // Test if lightning connection strings get migrated to internal
+                store.DerivationStrategies = new JObject()
+                {
+                    new JProperty("BTC_LightningLike", new JObject()
+                    {
+                        new JProperty("CryptoCode", "BTC"),
+                        new JProperty("LightningConnectionString", tester.PayTester.IntegratedLightning),
+                    })
+                }.ToString();
+                await tester.PayTester.StoreRepository.UpdateStore(store);
+                await RestartMigration(tester);
+                store = await tester.PayTester.StoreRepository.FindStore(acc.StoreId);
+                lnMethod = store.GetSupportedPaymentMethods(tester.NetworkProvider).OfType<LightningSupportedPaymentMethod>().First();
+                Assert.True(lnMethod.IsInternalNode);
+            }
+        }
+
+
         [Fact(Timeout = TestTimeout)]
         [Trait("Integration", "Integration")]
         public async Task CanDoInvoiceMigrations()
@@ -3423,7 +3503,7 @@ namespace BTCPayServer.Tests
                 await acc.CreateStoreAsync();
                 await acc.RegisterDerivationSchemeAsync("BTC");
                 var store = await tester.PayTester.StoreRepository.FindStore(acc.StoreId);
-                
+
                 var blob = store.GetStoreBlob();
                 var serializer = new Serializer(null);
 
@@ -3444,10 +3524,10 @@ namespace BTCPayServer.Tests
                             new KeyPath("44'/0'/0'").ToString()
                         }
                     })));
-                
+
                 blob.AdditionalData.Add("networkFeeDisabled", JToken.Parse(
                     serializer.ToString((bool?)true)));
-                
+
                 blob.AdditionalData.Add("onChainMinValue", JToken.Parse(
                     serializer.ToString(new CurrencyValue()
                     {
@@ -3460,18 +3540,13 @@ namespace BTCPayServer.Tests
                         Currency = "USD",
                         Value = 5m
                     }.ToString())));
-                
+
                 store.SetStoreBlob(blob);
                 await tester.PayTester.StoreRepository.UpdateStore(store);
-                var settings = tester.PayTester.GetService<SettingsRepository>();
-                await settings.UpdateSetting<MigrationSettings>(new MigrationSettings());
-                var migrationStartupTask = tester.PayTester.GetService<IServiceProvider>().GetServices<IStartupTask>()
-                    .Single(task => task is MigrationStartupTask);
-                await migrationStartupTask.ExecuteAsync();
-                
-                
+                await RestartMigration(tester);
+
                 store = await tester.PayTester.StoreRepository.FindStore(acc.StoreId);
-                
+
                 blob = store.GetStoreBlob();
                 Assert.Empty(blob.AdditionalData);
                 Assert.Single(blob.PaymentMethodCriteria);
@@ -3486,7 +3561,16 @@ namespace BTCPayServer.Tests
 
             }
         }
-       
+
+        private static async Task RestartMigration(ServerTester tester)
+        {
+            var settings = tester.PayTester.GetService<SettingsRepository>();
+            await settings.UpdateSetting<MigrationSettings>(new MigrationSettings());
+            var migrationStartupTask = tester.PayTester.GetService<IServiceProvider>().GetServices<IStartupTask>()
+                .Single(task => task is MigrationStartupTask);
+            await migrationStartupTask.ExecuteAsync();
+        }
+
         [Fact(Timeout = TestTimeout)]
         [Trait("Integration", "Integration")]
         public async Task EmailSenderTests()

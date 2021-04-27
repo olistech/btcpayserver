@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 #if ALTCOINS
 using BTCPayServer.Services.Altcoins.Ethereum.Payments;
 using BTCPayServer.Services.Altcoins.Monero.Payments;
@@ -16,6 +17,16 @@ namespace BTCPayServer.Payments
     /// </summary>
     public static class PaymentTypes
     {
+        private static PaymentType[] _paymentTypes =
+        {
+            BTCLike, LightningLike,
+#if ALTCOINS
+            MoneroLike,
+            EthereumPaymentType.Instance,
+            MaticPaymentType.Instance,
+            AvalanchePaymentType.Instance
+#endif
+        };
         /// <summary>
         /// On-Chain UTXO based, bitcoin compatible
         /// </summary>
@@ -34,35 +45,8 @@ namespace BTCPayServer.Payments
 
         public static bool TryParse(string paymentType, out PaymentType type)
         {
-            switch (paymentType.ToLowerInvariant())
-            {
-                case "btclike":
-                case "onchain":
-                    type = PaymentTypes.BTCLike;
-                    break;
-                case "lightninglike":
-                case "offchain":
-                    type = PaymentTypes.LightningLike;
-                    break;
-#if ALTCOINS
-                case "monerolike":
-                    type = PaymentTypes.MoneroLike;
-                    break;
-                case "ethereumlike":
-                    type = EthereumPaymentType.Instance;
-                    break;
-                case "maticlike":
-                    type = MaticPaymentType.Instance;
-                    break;
-                case "avalanchelike":
-                    type = AvalanchePaymentType.Instance;
-                    break;
-#endif
-                default:
-                    type = null;
-                    return false;
-            }
-            return true;
+            type = _paymentTypes.FirstOrDefault(type1 => type1.IsPaymentType(paymentType));
+            return type != null;
         }
         public static PaymentType Parse(string paymentType)
         {
@@ -100,5 +84,17 @@ namespace BTCPayServer.Payments
         public abstract string GetPaymentLink(BTCPayNetworkBase network, IPaymentMethodDetails paymentMethodDetails,
             Money cryptoInfoDue, string serverUri);
         public abstract string InvoiceViewPaymentPartialName { get; }
+
+        public virtual bool IsPaymentType(string paymentType)
+        {
+            paymentType = paymentType?.ToLowerInvariant();
+            return new[]
+            {
+                GetId().Replace("-", "", StringComparison.InvariantCulture), 
+                ToStringNormalized()
+            }.Contains(
+                paymentType,
+                StringComparer.InvariantCultureIgnoreCase);
+        }
     }
 }
