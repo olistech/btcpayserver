@@ -21,7 +21,7 @@ namespace BTCPayServer
           
             var ethereumNetwork = "ethereum";
            
-            string networkType = NetworkType == NetworkType.Mainnet? "mainnet" : "testnet";
+            string networkType = NetworkType == ChainName.Mainnet? "mainnet" : "testnet";
             var ethereumNetworkData = LoadEthereumNetworkData(networkType, ethereumNetwork);
           
             Add(new EthereumBTCPayNetwork()
@@ -41,7 +41,7 @@ namespace BTCPayServer
         public void InitERC20()
         {
             var ethereumNetwork = "ethereum";
-            string networkType = NetworkType == NetworkType.Mainnet? "mainnet" : "testnet";
+            string networkType = NetworkType == ChainName.Mainnet? "mainnet" : "testnet";
             var ethereumNetworkData = LoadEthereumNetworkData(networkType, ethereumNetwork);
             string explorer = ethereumNetworkData.Explorer;
             int chainId = ethereumNetworkData.ChainId;

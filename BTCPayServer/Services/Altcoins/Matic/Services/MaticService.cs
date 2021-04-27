@@ -17,6 +17,8 @@ using BTCPayServer.Services.Invoices;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using NBitcoin;
+using Nethereum.RPC.Eth.DTOs;
+using Nethereum.Web3;
 
 namespace BTCPayServer.Services.Altcoins.Matic.Services
 {

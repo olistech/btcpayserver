@@ -16,7 +16,9 @@ using BTCPayServer.Services.Altcoins.Avalanche.Configuration;
 using BTCPayServer.Services.Altcoins.Avalanche.Payments;
 using BTCPayServer.Services.Invoices;
 using Microsoft.Extensions.Logging;
+using NBitcoin;
 using NBitcoin.Logging;
+using Nethereum.Hex.HexTypes;
 using Nethereum.RPC.Eth.DTOs;
 using Nethereum.StandardTokenEIP20.ContractDefinition;
 using Nethereum.Web3;
@@ -37,7 +39,17 @@ namespace BTCPayServer.Services.Altcoins.Avalanche.Services
         public override async Task StartAsync(CancellationToken cancellationToken)
         {
             Logs.NodeServer.LogInformation($"Starting AvalancheWatcher for chain {ChainId}");
-            var result = await Web3.Eth.ChainId.SendRequestAsync();
+            HexBigInteger result;
+            try
+            {
+                result = await Web3.Eth.ChainId.SendRequestAsync();
+            }
+            catch (Exception e)
+            {
+                GlobalError =
+                    $"Web3 could not return chain id.";
+                return;
+            }
             if (result.Value != ChainId)
             {
                 GlobalError =
@@ -62,6 +74,7 @@ namespace BTCPayServer.Services.Altcoins.Avalanche.Services
         {
             if (evt is CatchUp)
             {
+                Console.WriteLine($"in ProcessEvent CatchUp");
                 DateTimeOffset start = DateTimeOffset.Now;
                 try {
                     await UpdateAnyPendingEthLikePaymentAndAddressWatchList(cancellationToken);
@@ -82,6 +95,7 @@ namespace BTCPayServer.Services.Altcoins.Avalanche.Services
 
             if (evt is AvalancheAddressBalanceFetched response)
             {
+                Console.WriteLine($"in ProcessEvent MaticAddressBalanceFetched for {response.Address} amount {response.Amount}");
                 if (response.ChainId != ChainId)
                 {
                     return;
@@ -105,6 +119,7 @@ namespace BTCPayServer.Services.Altcoins.Avalanche.Services
 
                 if (existingPayment is null && response.Amount > 0)
                 {
+                    Console.WriteLine($"in new payment for {response.Address}");
                     //new payment
                     var paymentData = new AvalancheLikePaymentData()
                     {
@@ -216,6 +231,7 @@ namespace BTCPayServer.Services.Altcoins.Avalanche.Services
 
         private async Task UpdateAnyPendingEthLikePaymentAndAddressWatchList(CancellationToken cancellationToken)
         {
+            Console.WriteLine($"in UpdateAnyPendingEthLikePaymentAndAddressWatchList");
             var invoiceIds = await _invoiceRepository.GetPendingInvoices();
             if (!invoiceIds.Any())
             {
@@ -230,10 +246,11 @@ namespace BTCPayServer.Services.Altcoins.Avalanche.Services
             await UpdatePaymentStates(invoices, cancellationToken);
         }
 
-        private long? LastBlock = null;
+        private Dictionary<string, ulong> LastBlock = new Dictionary<string, ulong>();
 
         private async Task UpdatePaymentStates(InvoiceEntity[] invoices, CancellationToken cancellationToken)
         {
+            Console.WriteLine($"in UpdatePaymentStates");
             if (!invoices.Any())
             {
                 return;
@@ -261,7 +278,7 @@ namespace BTCPayServer.Services.Altcoins.Avalanche.Services
                     tuple.ExistingPayments.All(valueTuple => !valueTuple.Payment.Accounted)).ToList();
 
                 var tasks = new List<Task>();
-                if (existingPaymentData.Any() && currentBlock.Value != LastBlock)
+                if (existingPaymentData.Any() && (!LastBlock.TryGetValue(network.CryptoCode, out var lastblock) || currentBlock.Value != lastblock))
                 {
                     Logs.NodeServer.LogInformation(
                         $"Checking {existingPaymentData.Count} existing payments on {expandedInvoices.Count} invoices on {network.CryptoCode}");
@@ -282,7 +299,7 @@ namespace BTCPayServer.Services.Altcoins.Avalanche.Services
                         });
                     })).ContinueWith(task =>
                     {
-                        LastBlock = (long?)currentBlock.Value;
+                        LastBlock.AddOrReplace(network.CryptoCode, (ulong)currentBlock.Value);
                     }, TaskScheduler.Current));
                 }
 
@@ -319,7 +336,7 @@ namespace BTCPayServer.Services.Altcoins.Avalanche.Services
             public int ChainId { get; set; }
             public string Address { get; set; }
             public string CryptoCode { get; set; }
-            public long Amount { get; set; }
+            public ulong Amount { get; set; }
             public InvoiceEntity InvoiceEntity { get; set; }
             public PaymentEntity MatchedExistingPayment { get; set; }
             public AvalancheLikeOnChainPaymentMethodDetails PaymentMethodDetails { get; set; }
@@ -336,16 +353,17 @@ namespace BTCPayServer.Services.Altcoins.Avalanche.Services
                 new InvoiceEvent(invoice, InvoiceEvent.ReceivedPayment) {Payment = payment});
         }
 
-        private async Task<long> GetBalance(AvalancheBTCPayNetwork network, BlockParameter blockParameter, string address)
+        private async Task<ulong> GetBalance(AvalancheBTCPayNetwork network, BlockParameter blockParameter, string address)
         {
             if (network is ERC20AvalancheBTCPayNetwork erc20BTCPayNetwork)
             {
-                return (long)(await Web3.Eth.GetContractHandler(erc20BTCPayNetwork.SmartContractAddress)
+                return (ulong)(await Web3.Eth.GetContractHandler(erc20BTCPayNetwork.SmartContractAddress)
                     .QueryAsync<BalanceOfFunction, BigInteger>(new BalanceOfFunction() {Owner = address}));
             }
             else
             {
-                return (long)(await Web3.Eth.GetBalance.SendRequestAsync(address, blockParameter)).Value;
+                Console.WriteLine($"calling GetBalance for address {address}");
+                return (ulong)(await Web3.Eth.GetBalance.SendRequestAsync(address, blockParameter)).Value;
             }
         }
 

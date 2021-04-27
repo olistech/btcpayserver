@@ -11,7 +11,7 @@ namespace BTCPayServer.Services.Altcoins.Avalanche.Payments
 {
     public class AvalancheLikePaymentData : CryptoPaymentData
     {
-        public long Amount { get; set; }
+        public ulong Amount { get; set; }
         public string CryptoCode { get; set; }
         public string Address { get; set; }
         public long AccountIndex { get; set; }
@@ -25,7 +25,7 @@ namespace BTCPayServer.Services.Altcoins.Avalanche.Payments
             return GetPaymentId(CryptoCode,Address, Amount);
         }
         
-        public static string GetPaymentId(string cryptoCode, string address, long amount)
+        public static string GetPaymentId(string cryptoCode, string address, ulong amount)
         {
             return $"{cryptoCode}#{address}#{amount}";
         }
@@ -35,12 +35,17 @@ namespace BTCPayServer.Services.Altcoins.Avalanche.Payments
             return new[] {Address};
         }
 
-        public decimal GetValue()
+         public decimal GetValue()
         {
-            return decimal.Parse(Web3.Convert.FromWeiToBigDecimal(Amount, Network.Divisibility).ToString(),
-                CultureInfo.InvariantCulture);
+            return GetValue(Network, Amount);
         }
 
+        public static decimal GetValue(BTCPayNetworkBase network, ulong amount)
+        {
+            return  decimal.Parse(Web3.Convert.FromWeiToBigDecimal(amount, network.Divisibility).ToString(),
+                CultureInfo.InvariantCulture);
+        }
+        
         public bool PaymentCompleted(PaymentEntity entity)
         {
             return ConfirmationCount >= 25;

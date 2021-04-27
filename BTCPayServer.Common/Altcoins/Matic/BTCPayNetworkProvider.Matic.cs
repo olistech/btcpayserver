@@ -13,7 +13,6 @@ namespace BTCPayServer
 {
     public partial class BTCPayNetworkProvider
     {
-        
         public void InitMatic()
         {
             // this will add the "base token" of the network
@@ -22,7 +21,7 @@ namespace BTCPayServer
             // read from end variable   
             var ethereumNetwork = "matic";
            
-            string networkType = NetworkType == NetworkType.Mainnet? "mainnet" : "testnet";
+            string networkType = NetworkType == ChainName.Mainnet? "mainnet" : "testnet";
             var ethereumNetworkData = LoadEthereumNetworkData(networkType, ethereumNetwork);
           
             Add(new MaticBTCPayNetwork()
@@ -42,7 +41,7 @@ namespace BTCPayServer
         public void InitMaticERC20()
         {
             var ethereumNetwork = "matic";
-            string networkType = NetworkType == NetworkType.Mainnet? "mainnet" : "testnet";
+            string networkType = NetworkType == ChainName.Mainnet? "mainnet" : "testnet";
             var ethereumNetworkData = LoadEthereumNetworkData(networkType, ethereumNetwork);
             string explorer = ethereumNetworkData.Explorer;
             int chainId = ethereumNetworkData.ChainId;

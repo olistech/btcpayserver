@@ -16,7 +16,9 @@ using BTCPayServer.Services.Altcoins.Matic.Configuration;
 using BTCPayServer.Services.Altcoins.Matic.Payments;
 using BTCPayServer.Services.Invoices;
 using Microsoft.Extensions.Logging;
+using NBitcoin;
 using NBitcoin.Logging;
+using Nethereum.Hex.HexTypes;
 using Nethereum.RPC.Eth.DTOs;
 using Nethereum.StandardTokenEIP20.ContractDefinition;
 using Nethereum.Web3;
@@ -37,7 +39,17 @@ namespace BTCPayServer.Services.Altcoins.Matic.Services
         public override async Task StartAsync(CancellationToken cancellationToken)
         {
             Logs.NodeServer.LogInformation($"Starting MaticWatcher for chain {ChainId}");
-            var result = await Web3.Eth.ChainId.SendRequestAsync();
+            HexBigInteger result;
+            try
+            {
+                result = await Web3.Eth.ChainId.SendRequestAsync();
+            }
+            catch (Exception e)
+            {
+                GlobalError =
+                    $"Web3 could not return chain id.";
+                return;
+            }
             if (result.Value != ChainId)
             {
                 GlobalError =
@@ -234,7 +246,7 @@ namespace BTCPayServer.Services.Altcoins.Matic.Services
             await UpdatePaymentStates(invoices, cancellationToken);
         }
 
-        private long? LastBlock = null;
+        private Dictionary<string, ulong> LastBlock = new Dictionary<string, ulong>();
 
         private async Task UpdatePaymentStates(InvoiceEntity[] invoices, CancellationToken cancellationToken)
         {
@@ -266,7 +278,7 @@ namespace BTCPayServer.Services.Altcoins.Matic.Services
                     tuple.ExistingPayments.All(valueTuple => !valueTuple.Payment.Accounted)).ToList();
 
                 var tasks = new List<Task>();
-                if (existingPaymentData.Any() && currentBlock.Value != LastBlock)
+                       if (existingPaymentData.Any() && (!LastBlock.TryGetValue(network.CryptoCode, out var lastblock) || currentBlock.Value != lastblock))
                 {
                     Logs.NodeServer.LogInformation(
                         $"Checking {existingPaymentData.Count} existing payments on {expandedInvoices.Count} invoices on {network.CryptoCode}");
@@ -274,7 +286,6 @@ namespace BTCPayServer.Services.Altcoins.Matic.Services
 
                     tasks.Add(Task.WhenAll(existingPaymentData.Select(async tuple =>
                     {
-                        //await Task.Delay(new Random().Next(2000,30000));
                         var bal = await GetBalance(network, blockParameter, tuple.PaymentData.Address);
                         _eventAggregator.Publish(new MaticAddressBalanceFetched()
                         {
@@ -288,7 +299,7 @@ namespace BTCPayServer.Services.Altcoins.Matic.Services
                         });
                     })).ContinueWith(task =>
                     {
-                        LastBlock = (long?)currentBlock.Value;
+                        LastBlock.AddOrReplace(network.CryptoCode, (ulong)currentBlock.Value);
                     }, TaskScheduler.Current));
                 }
 
@@ -299,7 +310,6 @@ namespace BTCPayServer.Services.Altcoins.Matic.Services
                     var blockParameter = BlockParameter.CreatePending();
                     tasks.AddRange(noAccountedPaymentInvoices.Select(async tuple =>
                     {
-                        //await Task.Delay(new Random().Next(2000,30000));
                         var bal = await GetBalance(network, blockParameter,
                             tuple.PaymentMethodDetails.GetPaymentMethodDetails().GetPaymentDestination());
                         _eventAggregator.Publish(new MaticAddressBalanceFetched()
@@ -326,7 +336,7 @@ namespace BTCPayServer.Services.Altcoins.Matic.Services
             public int ChainId { get; set; }
             public string Address { get; set; }
             public string CryptoCode { get; set; }
-            public long Amount { get; set; }
+            public ulong Amount { get; set; }
             public InvoiceEntity InvoiceEntity { get; set; }
             public PaymentEntity MatchedExistingPayment { get; set; }
             public MaticLikeOnChainPaymentMethodDetails PaymentMethodDetails { get; set; }
@@ -343,24 +353,25 @@ namespace BTCPayServer.Services.Altcoins.Matic.Services
                 new InvoiceEvent(invoice, InvoiceEvent.ReceivedPayment) {Payment = payment});
         }
 
-        private async Task<long> GetBalance(MaticBTCPayNetwork network, BlockParameter blockParameter, string address)
+        public async Task<ulong> GetBalance(MaticBTCPayNetwork network, BlockParameter blockParameter,
+            string address)
         {
             Console.WriteLine($"in GetBalance for {address}");
             return await Retry(_GetBalance(network, blockParameter, address), 10);
         }
 
-        private async Task<long> _GetBalance(MaticBTCPayNetwork network, BlockParameter blockParameter, string address)
+        private async Task<ulong> _GetBalance(MaticBTCPayNetwork network, BlockParameter blockParameter, string address)
         {
                 if (network is ERC20MaticBTCPayNetwork erc20BTCPayNetwork)
                 {
                     Console.WriteLine($"calling GetContractHandler on contract {erc20BTCPayNetwork.SmartContractAddress} for address {address}");
-                    return (long)(await Web3.Eth.GetContractHandler(erc20BTCPayNetwork.SmartContractAddress)
+                    return (ulong)(await Web3.Eth.GetContractHandler(erc20BTCPayNetwork.SmartContractAddress)
                         .QueryAsync<BalanceOfFunction, BigInteger>(new BalanceOfFunction() {Owner = address}));
                 }
                 else
                 {
                     Console.WriteLine($"calling GetBalance for address {address}");
-                    return (long)(await Web3.Eth.GetBalance.SendRequestAsync(address, blockParameter)).Value;
+                    return (ulong)(await Web3.Eth.GetBalance.SendRequestAsync(address, blockParameter)).Value;
                 }
         }
 

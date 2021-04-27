@@ -20,7 +20,7 @@ namespace BTCPayServer
             // read from end variable   
             var ethereumNetwork = "avalanche";
            
-            string networkType = NetworkType == NetworkType.Mainnet? "mainnet" : "testnet";
+            string networkType = NetworkType == ChainName.Mainnet? "mainnet" : "testnet";
             var ethereumNetworkData = LoadEthereumNetworkData(networkType, ethereumNetwork);
           
             Add(new AvalancheBTCPayNetwork()
@@ -40,7 +40,7 @@ namespace BTCPayServer
         public void InitAvalancheERC20()
         {
             var ethereumNetwork = "avalanche";
-            string networkType = NetworkType == NetworkType.Mainnet? "mainnet" : "testnet";
+            string networkType = NetworkType == ChainName.Mainnet? "mainnet" : "testnet";
             var ethereumNetworkData = LoadEthereumNetworkData(networkType, ethereumNetwork);
             string explorer = ethereumNetworkData.Explorer;
             int chainId = ethereumNetworkData.ChainId;
