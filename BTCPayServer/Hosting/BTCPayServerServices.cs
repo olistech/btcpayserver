@@ -317,6 +317,10 @@ namespace BTCPayServer.Hosting
             services.AddSingleton<IHostedService, HostedServices.CheckConfigurationHostedService>(o => o.GetRequiredService<CheckConfigurationHostedService>());
             services.AddSingleton<HostedServices.WebhookNotificationManager>();
             services.AddSingleton<IHostedService, WebhookNotificationManager>(o => o.GetRequiredService<WebhookNotificationManager>());
+            services.AddHttpClient(WebhookNotificationManager.OnionNamedClient)
+                .ConfigureHttpClient(h => h.DefaultRequestHeaders.ConnectionClose = true)
+                .ConfigurePrimaryHttpMessageHandler<Socks5HttpClientHandler>();
+            
             services.AddSingleton<HostedServices.PullPaymentHostedService>();
             services.AddSingleton<IHostedService, HostedServices.PullPaymentHostedService>(o => o.GetRequiredService<PullPaymentHostedService>());
 
@@ -367,7 +371,7 @@ namespace BTCPayServer.Hosting
             services.TryAddSingleton<ExplorerClientProvider>();
             services.TryAddSingleton<Bitpay>(o =>
             {
-                if (o.GetRequiredService<BTCPayServerOptions>().NetworkType == NetworkType.Mainnet)
+                if (o.GetRequiredService<BTCPayServerOptions>().NetworkType == ChainName.Mainnet)
                     return new Bitpay(new Key(), new Uri("https://bitpay.com/"));
                 else
                     return new Bitpay(new Key(), new Uri("https://test.bitpay.com/"));
