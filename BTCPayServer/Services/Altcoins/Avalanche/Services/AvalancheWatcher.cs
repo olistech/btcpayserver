@@ -95,7 +95,7 @@ namespace BTCPayServer.Services.Altcoins.Avalanche.Services
 
             if (evt is AvalancheAddressBalanceFetched response)
             {
-                Console.WriteLine($"in ProcessEvent MaticAddressBalanceFetched for {response.Address} amount {response.Amount}");
+                Console.WriteLine($"in ProcessEvent AvalancheAddressBalanceFetched for {response.Address} amount {response.Amount}");
                 if (response.ChainId != ChainId)
                 {
                     return;
