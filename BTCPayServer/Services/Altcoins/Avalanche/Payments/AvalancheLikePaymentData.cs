@@ -11,7 +11,7 @@ namespace BTCPayServer.Services.Altcoins.Avalanche.Payments
 {
     public class AvalancheLikePaymentData : CryptoPaymentData
     {
-        public ulong Amount { get; set; }
+        public BigInteger Amount { get; set; }
         public string CryptoCode { get; set; }
         public string Address { get; set; }
         public long AccountIndex { get; set; }
@@ -25,7 +25,7 @@ namespace BTCPayServer.Services.Altcoins.Avalanche.Payments
             return GetPaymentId(CryptoCode,Address, Amount);
         }
         
-        public static string GetPaymentId(string cryptoCode, string address, ulong amount)
+        public static string GetPaymentId(string cryptoCode, string address, BigInteger amount)
         {
             return $"{cryptoCode}#{address}#{amount}";
         }
@@ -40,7 +40,7 @@ namespace BTCPayServer.Services.Altcoins.Avalanche.Payments
             return GetValue(Network, Amount);
         }
 
-        public static decimal GetValue(BTCPayNetworkBase network, ulong amount)
+        public static decimal GetValue(BTCPayNetworkBase network, BigInteger amount)
         {
             return  decimal.Parse(Web3.Convert.FromWeiToBigDecimal(amount, network.Divisibility).ToString(),
                 CultureInfo.InvariantCulture);

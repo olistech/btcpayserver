@@ -336,7 +336,7 @@ namespace BTCPayServer.Services.Altcoins.Matic.Services
             public int ChainId { get; set; }
             public string Address { get; set; }
             public string CryptoCode { get; set; }
-            public ulong Amount { get; set; }
+            public BigInteger Amount { get; set; }
             public InvoiceEntity InvoiceEntity { get; set; }
             public PaymentEntity MatchedExistingPayment { get; set; }
             public MaticLikeOnChainPaymentMethodDetails PaymentMethodDetails { get; set; }
@@ -353,25 +353,25 @@ namespace BTCPayServer.Services.Altcoins.Matic.Services
                 new InvoiceEvent(invoice, InvoiceEvent.ReceivedPayment) {Payment = payment});
         }
 
-        public async Task<ulong> GetBalance(MaticBTCPayNetwork network, BlockParameter blockParameter,
+        public async Task<BigInteger> GetBalance(MaticBTCPayNetwork network, BlockParameter blockParameter,
             string address)
         {
             Console.WriteLine($"in GetBalance for {address}");
             return await Retry(_GetBalance(network, blockParameter, address), 10);
         }
 
-        private async Task<ulong> _GetBalance(MaticBTCPayNetwork network, BlockParameter blockParameter, string address)
+        private async Task<BigInteger> _GetBalance(MaticBTCPayNetwork network, BlockParameter blockParameter, string address)
         {
                 if (network is ERC20MaticBTCPayNetwork erc20BTCPayNetwork)
                 {
                     Console.WriteLine($"calling GetContractHandler on contract {erc20BTCPayNetwork.SmartContractAddress} for address {address}");
-                    return (ulong)(await Web3.Eth.GetContractHandler(erc20BTCPayNetwork.SmartContractAddress)
+                    return (BigInteger)(await Web3.Eth.GetContractHandler(erc20BTCPayNetwork.SmartContractAddress)
                         .QueryAsync<BalanceOfFunction, BigInteger>(new BalanceOfFunction() {Owner = address}));
                 }
                 else
                 {
                     Console.WriteLine($"calling GetBalance for address {address}");
-                    return (ulong)(await Web3.Eth.GetBalance.SendRequestAsync(address, blockParameter)).Value;
+                    return (BigInteger)(await Web3.Eth.GetBalance.SendRequestAsync(address, blockParameter)).Value;
                 }
         }
 

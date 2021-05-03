@@ -5,6 +5,7 @@ using System.Linq;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Numerics;
 using BTCPayServer.Data;
 using BTCPayServer.Events;
 using BTCPayServer.HostedServices;
@@ -317,7 +318,7 @@ namespace BTCPayServer.Services.Altcoins.Ethereum.Services
 
             return null;
         } 
-        public async Task<ulong?> GetBalance(EthereumBTCPayNetwork network, string address)
+        public async Task<BigInteger?> GetBalance(EthereumBTCPayNetwork network, string address)
         {
             if (_chainHostedServices.TryGetValue(network.ChainId, out var watcher) && string.IsNullOrEmpty(watcher.GlobalError))
             {

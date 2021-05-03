@@ -336,7 +336,7 @@ namespace BTCPayServer.Services.Altcoins.Avalanche.Services
             public int ChainId { get; set; }
             public string Address { get; set; }
             public string CryptoCode { get; set; }
-            public ulong Amount { get; set; }
+            public BigInteger Amount { get; set; }
             public InvoiceEntity InvoiceEntity { get; set; }
             public PaymentEntity MatchedExistingPayment { get; set; }
             public AvalancheLikeOnChainPaymentMethodDetails PaymentMethodDetails { get; set; }
@@ -353,17 +353,17 @@ namespace BTCPayServer.Services.Altcoins.Avalanche.Services
                 new InvoiceEvent(invoice, InvoiceEvent.ReceivedPayment) {Payment = payment});
         }
 
-        private async Task<ulong> GetBalance(AvalancheBTCPayNetwork network, BlockParameter blockParameter, string address)
+        private async Task<BigInteger> GetBalance(AvalancheBTCPayNetwork network, BlockParameter blockParameter, string address)
         {
             if (network is ERC20AvalancheBTCPayNetwork erc20BTCPayNetwork)
             {
-                return (ulong)(await Web3.Eth.GetContractHandler(erc20BTCPayNetwork.SmartContractAddress)
+                return (BigInteger)(await Web3.Eth.GetContractHandler(erc20BTCPayNetwork.SmartContractAddress)
                     .QueryAsync<BalanceOfFunction, BigInteger>(new BalanceOfFunction() {Owner = address}));
             }
             else
             {
                 Console.WriteLine($"calling GetBalance for address {address}");
-                return (ulong)(await Web3.Eth.GetBalance.SendRequestAsync(address, blockParameter)).Value;
+                return (BigInteger)(await Web3.Eth.GetBalance.SendRequestAsync(address, blockParameter)).Value;
             }
         }
 

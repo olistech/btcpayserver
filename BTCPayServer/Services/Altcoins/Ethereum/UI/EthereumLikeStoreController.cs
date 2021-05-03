@@ -528,7 +528,7 @@ namespace BTCPayServer.Services.Altcoins.Ethereum.UI
                 return RedirectToAction("GetStoreEthereumLikePaymentMethods", new {storeId = StoreData.Id});
             }
 
-            viewModel.GasPrice ??= (ulong)(await web3.Eth.GasPrice.SendRequestAsync()).Value;
+            viewModel.GasPrice ??= (BigInteger)(await web3.Eth.GasPrice.SendRequestAsync()).Value;
             viewModel.SweepRequests = viewModel.SweepRequests
                 .Where(request =>
                     leaveActiveInvoice ||
@@ -549,7 +549,7 @@ namespace BTCPayServer.Services.Altcoins.Ethereum.UI
                 sweepRequest.Native.Amount = amt;
                 sweepRequest.Native.GasCost = amt == 0
                     ? 0
-                    : (ulong)await etherTransferService.EstimateGasAsync(viewModel.DestinationAddress,
+                    : (BigInteger)await etherTransferService.EstimateGasAsync(viewModel.DestinationAddress,
                         EthereumLikePaymentData.GetValue(mainNetwork, amt));
 
                 foreach (SweepRequestItem sweepRequestItem in sweepRequest.Tokens)
@@ -576,7 +576,7 @@ namespace BTCPayServer.Services.Altcoins.Ethereum.UI
                         FromAddress = sweepRequest.Address
                     };
                     sweepRequestItem.GasCost =
-                        (ulong)(await transferHandler.EstimateGasAsync(network.SmartContractAddress,
+                        (BigInteger)(await transferHandler.EstimateGasAsync(network.SmartContractAddress,
                             transfer))
                         .Value;
                 }
@@ -611,7 +611,7 @@ namespace BTCPayServer.Services.Altcoins.Ethereum.UI
                 .Where(tuple => tuple.request.Tokens.Any(item => item.Amount > 0 && item.Sweep));
 
 
-            var ethForwardedTo = new Dictionary<string, ulong>();
+            var ethForwardedTo = new Dictionary<string, BigInteger>();
 
             foreach (var tuple in sufficient)
             {
@@ -653,7 +653,7 @@ namespace BTCPayServer.Services.Altcoins.Ethereum.UI
                     var anyInsufficientThatCanWorkWithExcessFromThisAccount =
                         insufficient?.Where(valueTuple =>
                         {
-                            ulong requiredAmount = valueTuple.diff;
+                            BigInteger requiredAmount = valueTuple.diff;
 
                             if (ethForwardedTo.ContainsKey(valueTuple.request.Address))
                             {
@@ -737,8 +737,8 @@ namespace BTCPayServer.Services.Altcoins.Ethereum.UI
     public class SweepRequestItem
     {
         public string CryptoCode { get; set; }
-        public ulong Amount { get; set; }
-        public ulong GasCost { get; set; }
+        public BigInteger Amount { get; set; }
+        public BigInteger GasCost { get; set; }
         public bool Sweep { get; set; }
         public string InvoiceId { get; set; }
         public string TransactionHash { get; set; }
@@ -753,9 +753,9 @@ namespace BTCPayServer.Services.Altcoins.Ethereum.UI
         public List<SweepRequestItem> Tokens { get; set; } = new List<SweepRequestItem>();
         public SweepRequestItem Native { get; set; }
 
-        public bool Sufficient(ulong gasPrice, out ulong difference)
+        public bool Sufficient(BigInteger gasPrice, out BigInteger difference)
         {
-            ulong gasCost = 0;
+            BigInteger gasCost = 0;
             foreach (var item in Tokens)
             {
                 if (item.Sweep) gasCost += item.GasCost;
@@ -792,7 +792,7 @@ namespace BTCPayServer.Services.Altcoins.Ethereum.UI
         [Required] public string KeyPath { get; set; }
         public string XPub { get; set; }
         public int ChainId { get; set; }
-        public ulong? GasPrice { get; set; }
+        public BigInteger? GasPrice { get; set; }
     }
 
     public class EditEthereumPaymentMethodViewModel

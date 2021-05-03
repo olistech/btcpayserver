@@ -329,7 +329,7 @@ namespace BTCPayServer.Services.Altcoins.Ethereum.Services
             public int ChainId { get; set; }
             public string Address { get; set; }
             public string CryptoCode { get; set; }
-            public ulong Amount { get; set; }
+            public BigInteger Amount { get; set; }
             public InvoiceEntity InvoiceEntity { get; set; }
             public PaymentEntity MatchedExistingPayment { get; set; }
             public EthereumLikeOnChainPaymentMethodDetails PaymentMethodDetails { get; set; }
@@ -346,17 +346,17 @@ namespace BTCPayServer.Services.Altcoins.Ethereum.Services
                 new InvoiceEvent(invoice, InvoiceEvent.ReceivedPayment) {Payment = payment});
         }
 
-        public async Task<ulong> GetBalance(EthereumBTCPayNetwork network, BlockParameter blockParameter,
+        public async Task<BigInteger> GetBalance(EthereumBTCPayNetwork network, BlockParameter blockParameter,
             string address)
         {
             if (network is ERC20BTCPayNetwork erc20BTCPayNetwork)
             {
-                return (ulong)(await Web3.Eth.GetContractHandler(erc20BTCPayNetwork.SmartContractAddress)
+                return (BigInteger)(await Web3.Eth.GetContractHandler(erc20BTCPayNetwork.SmartContractAddress)
                     .QueryAsync<BalanceOfFunction, BigInteger>(new BalanceOfFunction() {Owner = address}));
             }
             else
             {
-                return (ulong)(await Web3.Eth.GetBalance.SendRequestAsync(address, blockParameter)).Value;
+                return (BigInteger)(await Web3.Eth.GetBalance.SendRequestAsync(address, blockParameter)).Value;
             }
         }
 
